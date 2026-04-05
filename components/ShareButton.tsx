@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Share2, Check, Copy } from 'lucide-react'
 
 interface ShareButtonProps {
@@ -14,6 +14,11 @@ interface ShareButtonProps {
 
 export default function ShareButton({ eventId, eventTitle, className = '', compact = false }: ShareButtonProps) {
   const [status, setStatus] = useState<'idle' | 'success' | 'error'>('idle')
+  const [canShare, setCanShare] = useState(false)
+
+  useEffect(() => {
+    setCanShare(typeof navigator !== 'undefined' && typeof navigator.share === 'function')
+  }, [])
 
   const getUrl = () => {
     const base = typeof window !== 'undefined' ? window.location.origin : 'https://gutaguru.com'
@@ -31,7 +36,7 @@ export default function ShareButton({ eventId, eventTitle, className = '', compa
   const handleShare = async () => {
     const url = getUrl()
 
-    if (navigator.share) {
+    if (canShare) {
       try {
         await navigator.share({
           title: eventTitle,
@@ -99,7 +104,7 @@ export default function ShareButton({ eventId, eventTitle, className = '', compa
       {status === 'success' ? (
         <>
           <Check size={16} />
-          {navigator?.share ? 'Shared!' : 'Link Copied!'}
+          {canShare ? 'Shared!' : 'Link Copied!'}
         </>
       ) : (
         <>
