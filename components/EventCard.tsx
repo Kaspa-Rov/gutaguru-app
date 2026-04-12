@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import Image from 'next/image'
-import { ThumbsUp, Bookmark, Star, MapPin, TrendingUp, Zap } from 'lucide-react'
+import { ThumbsUp, Bookmark, Star, MapPin, TrendingUp, Zap, Share2 } from 'lucide-react'
 import { formatEventDate, getCategoryColor, getCategoryEmoji } from '@/lib/utils'
 import ShareButton from './ShareButton'
 import type { Event } from '@/types'
@@ -15,6 +15,8 @@ interface EventCardProps {
   onSave?: (id: string) => void
   /** Pass rank=1 to show the "#1 This Week" gold badge */
   rank?: number
+  /** When true: show stats only, no interactive buttons (archive/read-only view) */
+  readOnly?: boolean
 }
 
 function Badge({ label, type }: { label: string; type: 'number-one' | 'trending' | 'rising' }) {
@@ -47,6 +49,7 @@ export default function EventCard({
   onUpvote,
   onSave,
   rank,
+  readOnly = false,
 }: EventCardProps) {
   const isTrending = event.upvotes_count >= 20
   const isRising = event.upvotes_count >= 5 && event.upvotes_count < 20
@@ -118,38 +121,48 @@ export default function EventCard({
         <div className="flex items-center justify-between pt-2 border-t border-zinc-800">
           <div className="flex items-center gap-3">
             {/* Upvote */}
-            <button
-              onClick={() => onUpvote?.(event.id)}
-              className={`flex items-center gap-1.5 transition-colors group ${
-                userUpvoted
-                  ? 'text-amber-400'
-                  : 'text-zinc-400 hover:text-amber-400'
-              }`}
-              aria-label="Interested"
-            >
-              <ThumbsUp
-                size={15}
-                className={`group-hover:scale-110 transition-transform ${userUpvoted ? 'fill-amber-400' : ''}`}
-              />
-              <span className="text-xs font-medium">{event.upvotes_count}</span>
-            </button>
+            {readOnly ? (
+              <div className="flex items-center gap-1.5 text-zinc-500">
+                <ThumbsUp size={15} />
+                <span className="text-xs font-medium">{event.upvotes_count}</span>
+              </div>
+            ) : (
+              <button
+                onClick={() => onUpvote?.(event.id)}
+                className={`flex items-center gap-1.5 transition-colors group ${
+                  userUpvoted ? 'text-amber-400' : 'text-zinc-400 hover:text-amber-400'
+                }`}
+                aria-label="Interested"
+              >
+                <ThumbsUp
+                  size={15}
+                  className={`group-hover:scale-110 transition-transform ${userUpvoted ? 'fill-amber-400' : ''}`}
+                />
+                <span className="text-xs font-medium">{event.upvotes_count}</span>
+              </button>
+            )}
 
             {/* Save */}
-            <button
-              onClick={() => onSave?.(event.id)}
-              className={`flex items-center gap-1.5 transition-colors group ${
-                userSaved
-                  ? 'text-blue-400'
-                  : 'text-zinc-400 hover:text-blue-400'
-              }`}
-              aria-label="Save"
-            >
-              <Bookmark
-                size={15}
-                className={`group-hover:scale-110 transition-transform ${userSaved ? 'fill-blue-400' : ''}`}
-              />
-              <span className="text-xs font-medium">{event.saves_count}</span>
-            </button>
+            {readOnly ? (
+              <div className="flex items-center gap-1.5 text-zinc-500">
+                <Bookmark size={15} />
+                <span className="text-xs font-medium">{event.saves_count}</span>
+              </div>
+            ) : (
+              <button
+                onClick={() => onSave?.(event.id)}
+                className={`flex items-center gap-1.5 transition-colors group ${
+                  userSaved ? 'text-blue-400' : 'text-zinc-400 hover:text-blue-400'
+                }`}
+                aria-label="Save"
+              >
+                <Bookmark
+                  size={15}
+                  className={`group-hover:scale-110 transition-transform ${userSaved ? 'fill-blue-400' : ''}`}
+                />
+                <span className="text-xs font-medium">{event.saves_count}</span>
+              </button>
+            )}
 
             {/* Rating */}
             {event.average_rating && (
@@ -160,22 +173,32 @@ export default function EventCard({
             )}
           </div>
 
-          {/* Right side: share + tickets/social proof */}
+          {/* Right side: share count (readOnly) or interactive share + tickets */}
           <div className="flex items-center gap-2">
-            <ShareButton eventId={event.id} eventTitle={event.title} compact />
-
-            {event.ticket_link ? (
-              <a
-                href={event.ticket_link}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-xs font-bold bg-amber-400 hover:bg-amber-300 text-black px-3 py-1 rounded-full transition-colors"
-                onClick={(e) => e.stopPropagation()}
-              >
-                Tickets
-              </a>
+            {readOnly ? (
+              (event.share_count ?? 0) > 0 && (
+                <span className="text-xs text-zinc-500 flex items-center gap-1">
+                  <Share2 size={13} />
+                  {event.share_count}
+                </span>
+              )
             ) : (
-              <span className="text-xs text-zinc-500">{interestedLabel}</span>
+              <>
+                <ShareButton eventId={event.id} eventTitle={event.title} compact />
+                {event.ticket_link ? (
+                  <a
+                    href={event.ticket_link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs font-bold bg-amber-400 hover:bg-amber-300 text-black px-3 py-1 rounded-full transition-colors"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    Tickets
+                  </a>
+                ) : (
+                  <span className="text-xs text-zinc-500">{interestedLabel}</span>
+                )}
+              </>
             )}
           </div>
         </div>

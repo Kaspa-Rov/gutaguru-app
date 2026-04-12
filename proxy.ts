@@ -32,7 +32,18 @@ export async function proxy(request: NextRequest) {
   // IMPORTANT: getUser() (not getSession()) — getUser() validates the JWT against
   // Supabase servers, which is required to trigger a token refresh when expired.
   // Do NOT remove this call; it is what keeps sessions alive across navigations.
-  await supabase.auth.getUser()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  // Guard: /admin routes require an authenticated session.
+  // The role check (admin vs. subscriber) happens inside app/admin/layout.tsx —
+  // per Next.js docs, proxy should not be the sole auth layer.
+  if (request.nextUrl.pathname.startsWith('/admin')) {
+    if (!user) {
+      const loginUrl = new URL('/auth/login', request.url)
+      loginUrl.searchParams.set('redirectTo', request.nextUrl.pathname)
+      return NextResponse.redirect(loginUrl)
+    }
+  }
 
   // Forward the response. If setAll ran above, supabaseResponse carries refreshed
   // session cookies. If not, it forwards the original request unchanged.

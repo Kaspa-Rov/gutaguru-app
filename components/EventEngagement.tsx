@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { ThumbsUp, Bookmark, AlertCircle } from 'lucide-react'
+import { ThumbsUp, Bookmark, AlertCircle, Share2 } from 'lucide-react'
 import StarRating from './StarRating'
 import ShareButton from './ShareButton'
 
@@ -10,11 +10,14 @@ interface EventEngagementProps {
   eventTitle: string
   initialUpvotesCount: number
   initialSavesCount: number
+  initialShareCount?: number
   initialUserUpvoted: boolean
   initialUserSaved: boolean
   initialUserRating: number | null
   averageRating: number | null
   ratingsCount: number | null
+  /** When true: suppress interactive actions, show final stats only. Ratings still allowed. */
+  isPast?: boolean
 }
 
 export default function EventEngagement({
@@ -22,11 +25,13 @@ export default function EventEngagement({
   eventTitle,
   initialUpvotesCount,
   initialSavesCount,
+  initialShareCount = 0,
   initialUserUpvoted,
   initialUserSaved,
   initialUserRating,
   averageRating,
   ratingsCount,
+  isPast = false,
 }: EventEngagementProps) {
   const [upvoted, setUpvoted] = useState(initialUserUpvoted)
   const [upvotesCount, setUpvotesCount] = useState(initialUpvotesCount)
@@ -123,60 +128,70 @@ export default function EventEngagement({
 
   return (
     <div className="space-y-4">
-      {/* Error banner */}
-      {error && (
+      {/* Error banner — only relevant for live events */}
+      {error && !isPast && (
         <div className="flex items-center gap-2 bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-3">
           <AlertCircle size={15} className="text-red-400 flex-shrink-0" />
           <p className="text-red-400 text-sm">{error}</p>
         </div>
       )}
 
-      {/* Engagement stats */}
+      {/* Final stats row — always visible */}
       <div className="flex items-center gap-5 text-sm">
-        <span className={upvoted ? 'text-amber-400 font-semibold' : 'text-zinc-400'}>
+        <span className="text-zinc-400">
           <span className="font-bold text-white">{upvotesCount}</span>{' '}
           {upvotesCount === 1 ? 'person' : 'people'} interested
         </span>
-        <span className={saved ? 'text-blue-400 font-semibold' : 'text-zinc-400'}>
+        <span className="text-zinc-400">
           <span className="font-bold text-white">{savesCount}</span>{' '}
           {savesCount === 1 ? 'save' : 'saves'}
         </span>
+        {initialShareCount > 0 && (
+          <span className="flex items-center gap-1 text-zinc-400">
+            <Share2 size={13} />
+            <span className="font-bold text-white">{initialShareCount}</span>
+          </span>
+        )}
       </div>
 
-      {/* Action buttons */}
-      <div className="flex gap-3">
-        <button
-          onClick={handleUpvote}
-          disabled={upvoteLoading}
-          className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-sm transition-all active:scale-95 disabled:opacity-60 ${
-            upvoted
-              ? 'bg-amber-400 text-black'
-              : 'bg-zinc-800 hover:bg-zinc-700 text-white'
-          }`}
-        >
-          <ThumbsUp size={16} className={upvoted ? 'fill-black' : ''} />
-          {upvoteLoading ? 'Saving…' : upvoted ? 'Interested!' : 'Interested'}
-        </button>
+      {/* Action buttons — live events only */}
+      {!isPast && (
+        <div className="flex gap-3">
+          <button
+            onClick={handleUpvote}
+            disabled={upvoteLoading}
+            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-sm transition-all active:scale-95 disabled:opacity-60 ${
+              upvoted
+                ? 'bg-amber-400 text-black'
+                : 'bg-zinc-800 hover:bg-zinc-700 text-white'
+            }`}
+          >
+            <ThumbsUp size={16} className={upvoted ? 'fill-black' : ''} />
+            {upvoteLoading ? 'Saving…' : upvoted ? 'Interested!' : 'Interested'}
+          </button>
 
-        <button
-          onClick={handleSave}
-          disabled={saveLoading}
-          className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-sm transition-all active:scale-95 disabled:opacity-60 ${
-            saved
-              ? 'bg-blue-500 text-white'
-              : 'bg-zinc-800 hover:bg-zinc-700 text-white'
-          }`}
-        >
-          <Bookmark size={16} className={saved ? 'fill-white' : ''} />
-          {saveLoading ? 'Saving…' : saved ? 'Saved!' : 'Save'}
-        </button>
+          <button
+            onClick={handleSave}
+            disabled={saveLoading}
+            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-sm transition-all active:scale-95 disabled:opacity-60 ${
+              saved
+                ? 'bg-blue-500 text-white'
+                : 'bg-zinc-800 hover:bg-zinc-700 text-white'
+            }`}
+          >
+            <Bookmark size={16} className={saved ? 'fill-white' : ''} />
+            {saveLoading ? 'Saving…' : saved ? 'Saved!' : 'Save'}
+          </button>
 
-        <ShareButton eventId={eventId} eventTitle={eventTitle} className="flex-1" />
-      </div>
+          <ShareButton eventId={eventId} eventTitle={eventTitle} className="flex-1" />
+        </div>
+      )}
 
-      {/* Star rating */}
+      {/* Star rating — always enabled (post-event reviews are valuable) */}
       <div className="bg-zinc-900 rounded-xl p-4 border border-zinc-800">
-        <p className="text-white font-semibold text-sm mb-3">Rate this event</p>
+        <p className="text-white font-semibold text-sm mb-3">
+          {isPast ? 'Rate this event' : 'Rate this event'}
+        </p>
         <StarRating
           eventId={eventId}
           initialRating={initialUserRating}

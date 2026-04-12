@@ -2,27 +2,34 @@
 
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
+import { usePathname } from 'next/navigation'
 import { Search, MapPin, User, LogIn } from 'lucide-react'
 import { createClient } from '@/lib/supabase'
 
 export default function Navbar() {
+  const pathname = usePathname()
   const [isLoggedIn, setIsLoggedIn] = useState(false)
 
+  // All hooks must be declared before any conditional return (rules of hooks).
+  // The effect is intentionally skipped for admin paths — it just won't subscribe.
   useEffect(() => {
+    if (pathname.startsWith('/admin')) return
+
     const supabase = createClient()
 
-    // Check initial session
     supabase.auth.getUser().then(({ data: { user } }) => {
       setIsLoggedIn(!!user)
     })
 
-    // Stay in sync with auth state changes (login, logout, token refresh)
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setIsLoggedIn(!!session?.user)
     })
 
     return () => subscription.unsubscribe()
-  }, [])
+  }, [pathname])
+
+  // Admin has its own header — hide the consumer nav there
+  if (pathname.startsWith('/admin')) return null
 
   return (
     <nav className="sticky top-0 z-50 bg-black/95 backdrop-blur-sm border-b border-zinc-800">

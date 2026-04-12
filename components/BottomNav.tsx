@@ -2,18 +2,21 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Home, Compass, Trophy, BookmarkCheck, User } from 'lucide-react'
+import { Home, Compass, Trophy, Archive, User } from 'lucide-react'
 
 const NAV_ITEMS = [
-  { href: '/',            icon: Home,          label: 'Home'        },
-  { href: '/explore',     icon: Compass,       label: 'Explore'     },
-  { href: '/leaderboard', icon: Trophy,        label: 'Top'         },
-  { href: '/saved',       icon: BookmarkCheck, label: 'Saved'       },
-  { href: '/profile',     icon: User,          label: 'Profile'     },
+  { href: '/',               icon: Home,    label: 'Home'    },
+  { href: '/explore',        icon: Compass, label: 'Explore' },
+  { href: '/leaderboard',    icon: Trophy,  label: 'Top'     },
+  { href: '/events/archive', icon: Archive, label: 'Archive' },
+  { href: '/profile',        icon: User,    label: 'Profile' },
 ]
 
 export default function BottomNav() {
   const pathname = usePathname()
+
+  // Admin has its own navigation — hide the consumer bottom nav there
+  if (pathname.startsWith('/admin')) return null
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 bg-black/95 backdrop-blur-sm border-t border-zinc-800 safe-area-pb">

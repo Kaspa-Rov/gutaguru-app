@@ -1,5 +1,5 @@
 import { clsx, type ClassValue } from 'clsx'
-import { format, isToday, isTomorrow, isThisWeek, parseISO } from 'date-fns'
+import { format, isToday, isTomorrow, isThisWeek, isPast, parseISO } from 'date-fns'
 
 export function cn(...inputs: ClassValue[]) {
   return clsx(inputs)
@@ -18,6 +18,11 @@ export function formatEventDate(dateString: string): string {
     return format(date, "EEE h:mm a")
   }
   return format(date, 'MMM d, h:mm a')
+}
+
+/** Returns true if the event's date_time is strictly in the past */
+export function isEventPast(dateString: string): boolean {
+  return isPast(parseISO(dateString))
 }
 
 export function getCategoryColor(category: string): string {

@@ -1,16 +1,35 @@
 export type Category = 'Music' | 'Food' | 'Culture' | 'Networking' | 'Sports' | 'Art'
 
+export type EventStatus = 'draft' | 'pending_review' | 'published' | 'rejected'
+
 export interface Venue {
   id: string
   name: string
   address: string
   city: string
+  // CMS fields (nullable — added via add-cms.sql)
+  short_description?: string | null
+  full_description?: string | null
+  cover_image_url?: string | null
+  amenities?: string[]
+  payment_methods?: string[]
+  created_by?: string | null
+  owner_user_id?: string | null
+  is_claimed?: boolean
+  is_verified?: boolean
+  created_at?: string
 }
 
 export interface Event {
   id: string
   title: string
   description: string
+  // CMS fields
+  short_description?: string | null
+  full_description?: string | null
+  status?: EventStatus
+  created_by?: string | null
+  // Core fields
   date_time: string
   location: string
   city: string
@@ -21,6 +40,8 @@ export interface Event {
   upvotes_count: number
   saves_count: number
   share_count: number
+  created_at?: string
+  // Relations
   venues?: Venue | null
   average_rating?: number | null
   ratings_count?: number | null
