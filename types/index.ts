@@ -86,7 +86,7 @@ export interface Rating {
   rating: number
 }
 
-export interface PendingEvent extends Omit<Event, 'id' | 'upvotes_count' | 'saves_count'> {
+export interface PendingEvent extends Omit<Event, 'id' | 'upvotes_count' | 'saves_count' | 'status'> {
   id: string
   submitted_by: string
   status: 'pending' | 'approved' | 'rejected'
