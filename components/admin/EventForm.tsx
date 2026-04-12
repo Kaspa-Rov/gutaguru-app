@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import type { Event, EventStatus, Venue } from '@/types'
+import type { Category, Event, EventStatus, Venue } from '@/types'
 
 const CITIES    = ['Harare', 'Bulawayo']
 const CATEGORIES = ['Music', 'Food', 'Culture', 'Networking', 'Sports', 'Art'] as const
@@ -61,7 +61,7 @@ export default function EventForm({ event, venues, canSetStatus }: EventFormProp
   const [dateTime,         setDateTime]         = useState(toDatetimeLocal(event?.date_time))
   const [location,         setLocation]         = useState(event?.location ?? '')
   const [city,             setCity]             = useState(event?.city ?? 'Harare')
-  const [category,         setCategory]         = useState(event?.category ?? 'Music')
+  const [category,         setCategory]         = useState<Category>(event?.category ?? 'Music')
   const [imageUrl,         setImageUrl]         = useState(event?.image_url ?? '')
   const [ticketLink,       setTicketLink]       = useState(event?.ticket_link ?? '')
   const [venueId,          setVenueId]          = useState(event?.venue_id ?? '')
@@ -203,7 +203,7 @@ export default function EventForm({ event, venues, canSetStatus }: EventFormProp
       {/* Category + Status row */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
         <Field label="Category" required>
-          <select value={category} onChange={e => setCategory(e.target.value)} className={inputCls}>
+          <select value={category} onChange={e => setCategory(e.target.value as Category)} className={inputCls}>
             {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
           </select>
         </Field>
