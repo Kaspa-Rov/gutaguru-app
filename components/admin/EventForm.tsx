@@ -1,7 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { Upload, Link2, X } from 'lucide-react'
 import type { Category, Event, EventStatus, Venue } from '@/types'
 
 const CITIES    = ['Harare', 'Bulawayo']
@@ -67,6 +68,12 @@ export default function EventForm({ event, venues, canSetStatus }: EventFormProp
   const [venueId,          setVenueId]          = useState(event?.venue_id ?? '')
   const [status,           setStatus]           = useState<EventStatus>(event?.status ?? 'published')
 
+  // Image input mode: 'url' (paste) or 'upload' (device file)
+  const [imageMode,    setImageMode]    = useState<'url' | 'upload'>('url')
+  const [uploading,    setUploading]    = useState(false)
+  const [uploadError,  setUploadError]  = useState<string | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
   const [submitting, setSubmitting] = useState(false)
   const [error,      setError]      = useState<string | null>(null)
 
@@ -113,6 +120,27 @@ export default function EventForm({ event, venues, canSetStatus }: EventFormProp
       router.refresh()
     } catch { setError('Delete failed.') }
     finally { setSubmitting(false) }
+  }
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setUploadError(null)
+    setUploading(true)
+    try {
+      const form = new FormData()
+      form.append('file', file)
+      const res  = await fetch('/api/admin/upload', { method: 'POST', body: form })
+      const data = await res.json()
+      if (!res.ok) { setUploadError(data.error ?? 'Upload failed'); return }
+      setImageUrl(data.url)
+    } catch {
+      setUploadError('Network error. Please try again.')
+    } finally {
+      setUploading(false)
+      // Reset so the same file can be re-selected after clearing
+      if (fileInputRef.current) fileInputRef.current.value = ''
+    }
   }
 
   // Group venues by city for the dropdown
@@ -240,22 +268,78 @@ export default function EventForm({ event, venues, canSetStatus }: EventFormProp
         />
       </Field>
 
-      {/* Image URL */}
-      <Field label="Cover Image URL" hint="Paste a direct image URL (Unsplash, Cloudinary, etc.).">
-        <input
-          type="url"
-          value={imageUrl}
-          onChange={e => setImageUrl(e.target.value)}
-          placeholder="https://images.unsplash.com/…"
-          className={inputCls}
-        />
-        {imageUrl && (
-          <img
-            src={imageUrl}
-            alt="Preview"
-            className="mt-2 rounded-xl h-32 w-full object-cover border border-zinc-700"
-            onError={e => { (e.target as HTMLImageElement).style.display = 'none' }}
+      {/* Cover Image — toggle between upload and URL paste */}
+      <Field label="Cover Image">
+        {/* Mode toggle */}
+        <div className="flex rounded-xl overflow-hidden border border-zinc-700 mb-2 w-fit">
+          <button
+            type="button"
+            onClick={() => { setImageMode('upload'); setUploadError(null) }}
+            className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold transition-colors ${imageMode === 'upload' ? 'bg-amber-400 text-black' : 'bg-zinc-800 text-zinc-400 hover:text-white'}`}
+          >
+            <Upload size={12} /> Upload
+          </button>
+          <button
+            type="button"
+            onClick={() => { setImageMode('url'); setUploadError(null) }}
+            className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold transition-colors ${imageMode === 'url' ? 'bg-amber-400 text-black' : 'bg-zinc-800 text-zinc-400 hover:text-white'}`}
+          >
+            <Link2 size={12} /> Paste URL
+          </button>
+        </div>
+
+        {imageMode === 'url' ? (
+          <input
+            type="url"
+            value={imageUrl}
+            onChange={e => setImageUrl(e.target.value)}
+            placeholder="https://images.unsplash.com/…"
+            className={inputCls}
           />
+        ) : (
+          <div className="flex items-center gap-2">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp,image/gif"
+              onChange={handleFileChange}
+              disabled={uploading}
+              className="hidden"
+              id="event-image-upload"
+            />
+            <label
+              htmlFor="event-image-upload"
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border text-sm font-medium cursor-pointer transition-colors ${uploading ? 'opacity-50 cursor-not-allowed' : 'bg-zinc-800 border-zinc-700 text-zinc-300 hover:border-amber-400 hover:text-white'}`}
+            >
+              <Upload size={14} />
+              {uploading ? 'Uploading…' : 'Choose image'}
+            </label>
+            <span className="text-zinc-600 text-xs">JPEG, PNG, WebP, GIF · max 5 MB</span>
+          </div>
+        )}
+
+        {uploadError && (
+          <p className="text-red-400 text-xs mt-1">{uploadError}</p>
+        )}
+
+        {/* Preview + clear — shown for both modes once a URL is set */}
+        {imageUrl && (
+          <div className="relative mt-2">
+            <img
+              src={imageUrl}
+              alt="Preview"
+              className="rounded-xl h-32 w-full object-cover border border-zinc-700"
+              onError={e => { (e.target as HTMLImageElement).style.display = 'none' }}
+            />
+            <button
+              type="button"
+              onClick={() => setImageUrl('')}
+              className="absolute top-1.5 right-1.5 p-1 rounded-full bg-zinc-900/80 hover:bg-zinc-800 text-zinc-400 hover:text-white transition-colors"
+              title="Remove image"
+            >
+              <X size={12} />
+            </button>
+          </div>
         )}
       </Field>
 
