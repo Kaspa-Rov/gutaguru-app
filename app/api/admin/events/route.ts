@@ -19,7 +19,8 @@ export async function POST(request: NextRequest) {
 
   const body = await request.json()
   const { title, short_description, full_description, date_time, location, city,
-          category, image_url, ticket_link, venue_id, status: requestedStatus } = body
+          category, image_url, ticket_link, venue_id, status: requestedStatus,
+          submitter_type } = body
 
   // Validate required fields
   if (!title?.trim() || !date_time || !category || !city) {
@@ -53,6 +54,7 @@ export async function POST(request: NextRequest) {
       image_url: image_url?.trim() || null,
       ticket_link: ticket_link?.trim() || null,
       venue_id: venue_id || null,
+      submitter_type: submitter_type?.trim() || null,
       created_by: user.id,
       status,
       upvotes_count: 0,

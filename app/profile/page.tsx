@@ -1,7 +1,8 @@
 import { createSupabaseServerClient } from '@/lib/supabase-server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import { LogOut, Bookmark, ThumbsUp, Settings, Zap, ChevronRight, Star, Share2, Gift } from 'lucide-react'
+import { LogOut, Bookmark, ThumbsUp, Settings, Zap, ChevronRight, Star, Share2, Gift, LayoutDashboard, PlusCircle, ShieldCheck } from 'lucide-react'
+import { isAdmin, isContributor } from '@/lib/roles'
 
 export const dynamic = 'force-dynamic'
 
@@ -13,11 +14,12 @@ export default async function ProfilePage() {
     redirect('/auth/login')
   }
 
-  // Fetch stats in parallel
+  // Fetch stats + profile in parallel
   const [
     { count: savedCount },
     { count: upvoteCount },
     { data: pointsRow },
+    { data: profile },
   ] = await Promise.all([
     supabase
       .from('saved_events')
@@ -32,7 +34,14 @@ export default async function ProfilePage() {
       .select('total')
       .eq('user_id', user.id)
       .maybeSingle(),
+    supabase
+      .from('profiles')
+      .select('role, display_name')
+      .eq('id', user.id)
+      .maybeSingle(),
   ])
+
+  const role = profile?.role ?? 'subscriber'
 
   const emailName = user.email?.split('@')[0] ?? 'User'
   const totalPoints = pointsRow?.total ?? 0
@@ -159,6 +168,40 @@ export default async function ProfilePage() {
         <p className="mt-4 text-xs text-zinc-500">
           Active users will be first to unlock rewards when the programme launches.
         </p>
+      </div>
+
+      {/* ── Role-aware CTAs ───────────────────────────────────────────────── */}
+      <div className="space-y-2">
+        {isAdmin(role) && (
+          <Link
+            href="/admin"
+            className="flex items-center gap-3 bg-amber-400/10 rounded-xl px-4 py-3.5 border border-amber-400/30 hover:border-amber-400/60 transition-colors"
+          >
+            <ShieldCheck size={18} className="text-amber-400" />
+            <span className="text-amber-300 text-sm font-bold flex-1">Admin Dashboard</span>
+            <ChevronRight size={16} className="text-amber-500/60" />
+          </Link>
+        )}
+
+        {isContributor(role) && (
+          <Link
+            href="/dashboard"
+            className="flex items-center gap-3 bg-amber-400/10 rounded-xl px-4 py-3.5 border border-amber-400/30 hover:border-amber-400/60 transition-colors"
+          >
+            <LayoutDashboard size={18} className="text-amber-400" />
+            <span className="text-amber-300 text-sm font-bold flex-1">My Dashboard</span>
+            <ChevronRight size={16} className="text-amber-500/60" />
+          </Link>
+        )}
+
+        <Link
+          href="/submit"
+          className="flex items-center gap-3 bg-zinc-900 rounded-xl px-4 py-3.5 border border-zinc-700 hover:border-amber-400/50 transition-colors"
+        >
+          <PlusCircle size={18} className="text-green-400" />
+          <span className="text-white text-sm font-medium flex-1">Submit an Event</span>
+          <ChevronRight size={16} className="text-zinc-600" />
+        </Link>
       </div>
 
       {/* ── Menu ──────────────────────────────────────────────────────────── */}

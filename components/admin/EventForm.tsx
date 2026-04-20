@@ -13,11 +13,14 @@ const STATUSES: { value: EventStatus; label: string }[] = [
   { value: 'draft',         label: 'Draft'          },
   { value: 'rejected',      label: 'Rejected'       },
 ]
+const SUBMITTER_TYPES = ['Event Organiser', 'Venue Manager', 'Contributor / Supporter'] as const
 
 interface EventFormProps {
   event?: Event
   venues: Pick<Venue, 'id' | 'name' | 'city'>[]
   canSetStatus: boolean   // true for editor+
+  /** When false: hides admin-only controls, shows submitter type, redirects to /dashboard on save */
+  isAdminView?: boolean
 }
 
 function CharCount({ value, max }: { value: string; max: number }) {
@@ -52,7 +55,7 @@ function toDatetimeLocal(str?: string | null): string {
   try { return new Date(str).toISOString().slice(0, 16) } catch { return '' }
 }
 
-export default function EventForm({ event, venues, canSetStatus }: EventFormProps) {
+export default function EventForm({ event, venues, canSetStatus, isAdminView = true }: EventFormProps) {
   const router = useRouter()
   const isEdit = !!event?.id
 
@@ -67,6 +70,7 @@ export default function EventForm({ event, venues, canSetStatus }: EventFormProp
   const [ticketLink,       setTicketLink]       = useState(event?.ticket_link ?? '')
   const [venueId,          setVenueId]          = useState(event?.venue_id ?? '')
   const [status,           setStatus]           = useState<EventStatus>(event?.status ?? 'published')
+  const [submitterType,    setSubmitterType]    = useState(event?.submitter_type ?? SUBMITTER_TYPES[0])
 
   // Image input mode: 'url' (paste) or 'upload' (device file)
   const [imageMode,    setImageMode]    = useState<'url' | 'upload'>('url')
@@ -87,6 +91,7 @@ export default function EventForm({ event, venues, canSetStatus }: EventFormProp
       date_time: dateTime, location, city, category, image_url: imageUrl,
       ticket_link: ticketLink, venue_id: venueId || null,
       ...(canSetStatus ? { status } : {}),
+      ...(!isAdminView ? { submitter_type: submitterType } : {}),
     }
 
     const url    = isEdit ? `/api/admin/events/${event.id}` : '/api/admin/events'
@@ -100,7 +105,7 @@ export default function EventForm({ event, venues, canSetStatus }: EventFormProp
       })
       const data = await res.json()
       if (!res.ok) { setError(data.error ?? 'Something went wrong'); return }
-      router.push('/admin/events')
+      router.push(isAdminView ? '/admin/events' : '/dashboard')
       router.refresh()
     } catch {
       setError('Network error. Please try again.')
@@ -228,7 +233,7 @@ export default function EventForm({ event, venues, canSetStatus }: EventFormProp
         </Field>
       </div>
 
-      {/* Category + Status row */}
+      {/* Category + Status / Submitter type row */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
         <Field label="Category" required>
           <select value={category} onChange={e => setCategory(e.target.value as Category)} className={inputCls}>
@@ -240,6 +245,14 @@ export default function EventForm({ event, venues, canSetStatus }: EventFormProp
           <Field label="Status">
             <select value={status} onChange={e => setStatus(e.target.value as EventStatus)} className={inputCls}>
               {STATUSES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
+            </select>
+          </Field>
+        )}
+
+        {!isAdminView && (
+          <Field label="Submitting as" hint="Helps us review your submission appropriately.">
+            <select value={submitterType} onChange={e => setSubmitterType(e.target.value)} className={inputCls}>
+              {SUBMITTER_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
             </select>
           </Field>
         )}
@@ -372,7 +385,7 @@ export default function EventForm({ event, venues, canSetStatus }: EventFormProp
           Cancel
         </button>
 
-        {isEdit && (
+        {isEdit && isAdminView && (
           <button
             type="button"
             onClick={handleDelete}

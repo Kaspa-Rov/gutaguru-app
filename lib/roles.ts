@@ -50,6 +50,15 @@ export function canManageVenues(role: string): boolean {
   return hasRole(role, 'venue_manager')
 }
 
+/**
+ * External contributor — can access /dashboard.
+ * Covers contributor, venue_manager, organiser, editor.
+ * Deliberately excludes admin+ (they use /admin instead).
+ */
+export function isContributor(role: string): boolean {
+  return hasRole(role, 'contributor') && !isAdmin(role)
+}
+
 /** Human-readable display labels. */
 export const ROLE_LABEL: Record<Role, string> = {
   super_admin:   'Super Admin',

@@ -40,6 +40,7 @@ export interface Event {
   upvotes_count: number
   saves_count: number
   share_count: number
+  submitter_type?: string | null
   created_at?: string
   // Relations
   venues?: Venue | null

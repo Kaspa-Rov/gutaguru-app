@@ -34,13 +34,13 @@ export async function proxy(request: NextRequest) {
   // Do NOT remove this call; it is what keeps sessions alive across navigations.
   const { data: { user } } = await supabase.auth.getUser()
 
-  // Guard: /admin routes require an authenticated session.
-  // The role check (admin vs. subscriber) happens inside app/admin/layout.tsx —
-  // per Next.js docs, proxy should not be the sole auth layer.
-  if (request.nextUrl.pathname.startsWith('/admin')) {
+  // Guard authenticated-only routes. Role checks happen inside each layout.tsx.
+  const { pathname } = request.nextUrl
+  const authRequired = ['/admin', '/dashboard', '/submit']
+  if (authRequired.some(p => pathname.startsWith(p))) {
     if (!user) {
       const loginUrl = new URL('/auth/login', request.url)
-      loginUrl.searchParams.set('redirectTo', request.nextUrl.pathname)
+      loginUrl.searchParams.set('redirectTo', pathname)
       return NextResponse.redirect(loginUrl)
     }
   }
